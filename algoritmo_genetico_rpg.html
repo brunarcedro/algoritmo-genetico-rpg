@@ -1,0 +1,900 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Algoritmo Genético - Otimização de Build de Personagem RPG</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+        }
+
+        h1 {
+            text-align: center;
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .control-group label {
+            font-size: 0.9em;
+            color: #555;
+            font-weight: 600;
+        }
+
+        input[type="number"] {
+            padding: 8px 12px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 1em;
+            width: 120px;
+        }
+
+        button {
+            padding: 12px 30px;
+            font-size: 1em;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+            text-transform: uppercase;
+        }
+
+        .btn-start {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-start:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-reset {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .btn-reset:hover {
+            background: #c0392b;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            padding: 15px;
+            border-radius: 10px;
+            color: white;
+            text-align: center;
+        }
+
+        .stat-card h3 {
+            font-size: 0.9em;
+            margin-bottom: 5px;
+            opacity: 0.9;
+        }
+
+        .stat-card .value {
+            font-size: 2em;
+            font-weight: bold;
+        }
+
+        .visualization {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .panel {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            border: 2px solid #e0e0e0;
+        }
+
+        .panel h2 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .best-character {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .best-character h3 {
+            margin-bottom: 15px;
+            font-size: 1.5em;
+        }
+
+        .attributes {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .attribute {
+            background: rgba(255,255,255,0.2);
+            padding: 10px;
+            border-radius: 5px;
+        }
+
+        .attribute-name {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+
+        .attribute-value {
+            font-size: 1.5em;
+            font-weight: bold;
+        }
+
+        .skills {
+            background: rgba(255,255,255,0.2);
+            padding: 15px;
+            border-radius: 5px;
+        }
+
+        .skills h4 {
+            margin-bottom: 10px;
+        }
+
+        .skill-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .skill-tag {
+            background: rgba(255,255,255,0.3);
+            padding: 5px 12px;
+            border-radius: 15px;
+            font-size: 0.9em;
+        }
+
+        .population-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 15px;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        .individual {
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 15px;
+            transition: all 0.3s;
+        }
+
+        .individual:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .individual.elite {
+            border-color: #f39c12;
+            background: linear-gradient(135deg, #fff7e6 0%, #ffe6cc 100%);
+        }
+
+        .fitness-bar {
+            width: 100%;
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+
+        .fitness-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            transition: width 0.3s;
+        }
+
+        .mini-attributes {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 5px;
+            font-size: 0.8em;
+        }
+
+        .mini-attr {
+            text-align: center;
+            padding: 5px;
+            background: #f8f9fa;
+            border-radius: 3px;
+        }
+
+        .chart-container {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+
+        canvas {
+            max-width: 100%;
+        }
+
+        .log {
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .log-entry {
+            margin-bottom: 5px;
+            padding: 3px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .log-generation {
+            color: #3498db;
+            font-weight: bold;
+        }
+
+        .log-improvement {
+            color: #2ecc71;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .running .btn-start {
+            animation: pulse 1s infinite;
+        }
+
+        .full-width {
+            grid-column: 1 / -1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>⚔️ Algoritmo Genético - Build de Personagem RPG</h1>
+        <p class="subtitle">Otimização de distribuição de atributos e habilidades para maximizar eficiência em combate</p>
+
+        <div class="controls">
+            <div class="control-group">
+                <label>Tamanho da População</label>
+                <input type="number" id="popSize" value="50" min="10" max="200">
+            </div>
+            <div class="control-group">
+                <label>Taxa de Mutação (%)</label>
+                <input type="number" id="mutationRate" value="15" min="1" max="100">
+            </div>
+            <div class="control-group">
+                <label>Taxa de Elitismo (%)</label>
+                <input type="number" id="eliteRate" value="10" min="0" max="50">
+            </div>
+            <div class="control-group">
+                <label>Delay (ms)</label>
+                <input type="number" id="delay" value="200" min="0" max="2000" step="50">
+            </div>
+            <button class="btn-start" onclick="startEvolution()">Iniciar Evolução</button>
+            <button class="btn-reset" onclick="resetEvolution()">Resetar</button>
+        </div>
+
+        <div class="stats">
+            <div class="stat-card">
+                <h3>Geração Atual</h3>
+                <div class="value" id="generation">0</div>
+            </div>
+            <div class="stat-card">
+                <h3>Melhor Fitness</h3>
+                <div class="value" id="bestFitness">0</div>
+            </div>
+            <div class="stat-card">
+                <h3>Fitness Médio</h3>
+                <div class="value" id="avgFitness">0</div>
+            </div>
+            <div class="stat-card">
+                <h3>Diversidade</h3>
+                <div class="value" id="diversity">0%</div>
+            </div>
+        </div>
+
+        <div class="visualization">
+            <div class="panel full-width">
+                <h2>🏆 Melhor Build Atual</h2>
+                <div id="bestCharacterDisplay"></div>
+            </div>
+
+            <div class="panel">
+                <h2>📊 Evolução do Fitness</h2>
+                <div class="chart-container">
+                    <canvas id="fitnessChart" width="400" height="250"></canvas>
+                </div>
+            </div>
+
+            <div class="panel">
+                <h2>📈 Diversidade da População</h2>
+                <div class="chart-container">
+                    <canvas id="diversityChart" width="400" height="250"></canvas>
+                </div>
+            </div>
+
+            <div class="panel full-width">
+                <h2>👥 População Atual</h2>
+                <div class="population-grid" id="populationDisplay"></div>
+            </div>
+
+            <div class="panel full-width">
+                <h2>📝 Log de Evolução</h2>
+                <div class="log" id="logDisplay"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuração do jogo
+        const TOTAL_POINTS = 100;
+        const MAX_ATTR_VALUE = 50;
+        const SKILLS = [
+            { name: 'Golpe Poderoso', reqStr: 15, reqDex: 0, reqInt: 0 },
+            { name: 'Ataque Rápido', reqStr: 10, reqDex: 15, reqInt: 0 },
+            { name: 'Bola de Fogo', reqStr: 0, reqDex: 0, reqInt: 20 },
+            { name: 'Escudo Arcano', reqStr: 0, reqDex: 5, reqInt: 15 },
+            { name: 'Cura Divina', reqStr: 0, reqDex: 0, reqInt: 25 },
+            { name: 'Fúria Berserker', reqStr: 25, reqDex: 10, reqInt: 0 },
+            { name: 'Esquiva Perfeita', reqStr: 5, reqDex: 25, reqInt: 5 },
+            { name: 'Raio Arcano', reqStr: 0, reqDex: 10, reqInt: 30 },
+            { name: 'Contra-Ataque', reqStr: 15, reqDex: 20, reqInt: 0 },
+            { name: 'Invocação', reqStr: 5, reqDex: 5, reqInt: 35 }
+        ];
+
+        // Estado global
+        let population = [];
+        let generation = 0;
+        let isRunning = false;
+        let fitnessHistory = [];
+        let diversityHistory = [];
+        let bestEver = null;
+
+        // Canvas para gráficos
+        let fitnessCtx = document.getElementById('fitnessChart').getContext('2d');
+        let diversityCtx = document.getElementById('diversityChart').getContext('2d');
+
+        // Classe do Indivíduo (Personagem)
+        class Character {
+            constructor(strength, dexterity, intelligence, vitality, luck) {
+                // Normalizar atributos para respeitar o total de pontos
+                const total = strength + dexterity + intelligence + vitality + luck;
+                const factor = total > 0 ? TOTAL_POINTS / total : 1;
+
+                this.strength = Math.min(MAX_ATTR_VALUE, Math.round(strength * factor));
+                this.dexterity = Math.min(MAX_ATTR_VALUE, Math.round(dexterity * factor));
+                this.intelligence = Math.min(MAX_ATTR_VALUE, Math.round(intelligence * factor));
+                this.vitality = Math.min(MAX_ATTR_VALUE, Math.round(vitality * factor));
+                this.luck = Math.min(MAX_ATTR_VALUE, Math.round(luck * factor));
+
+                // Ajuste fino para garantir total exato
+                this.adjustTotal();
+
+                this.skills = this.determineSkills();
+                this.fitness = 0;
+            }
+
+            adjustTotal() {
+                let currentTotal = this.strength + this.dexterity + this.intelligence + this.vitality + this.luck;
+                while (currentTotal !== TOTAL_POINTS) {
+                    if (currentTotal < TOTAL_POINTS) {
+                        const attrs = ['strength', 'dexterity', 'intelligence', 'vitality', 'luck'];
+                        const randomAttr = attrs[Math.floor(Math.random() * attrs.length)];
+                        if (this[randomAttr] < MAX_ATTR_VALUE) {
+                            this[randomAttr]++;
+                        }
+                    } else {
+                        const attrs = ['strength', 'dexterity', 'intelligence', 'vitality', 'luck'];
+                        const randomAttr = attrs[Math.floor(Math.random() * attrs.length)];
+                        if (this[randomAttr] > 0) {
+                            this[randomAttr]--;
+                        }
+                    }
+                    currentTotal = this.strength + this.dexterity + this.intelligence + this.vitality + this.luck;
+                }
+            }
+
+            determineSkills() {
+                return SKILLS.filter(skill =>
+                    this.strength >= skill.reqStr &&
+                    this.dexterity >= skill.reqDex &&
+                    this.intelligence >= skill.reqInt
+                );
+            }
+
+            calculateFitness() {
+                // HP baseado em vitalidade
+                const hp = 100 + (this.vitality * 10);
+
+                // Dano baseado em força, destreza e inteligência
+                const physicalDamage = this.strength * 2 + this.dexterity * 1.5;
+                const magicalDamage = this.intelligence * 2.5;
+                const totalDamage = physicalDamage + magicalDamage;
+
+                // Taxa de crítico baseada em sorte e destreza
+                const critRate = (this.luck + this.dexterity) / 200;
+                const critMultiplier = 1 + critRate;
+
+                // Defesa baseada em vitalidade e força
+                const defense = this.vitality * 1.5 + this.strength * 0.5;
+
+                // Bônus por habilidades desbloqueadas
+                const skillBonus = this.skills.length * 50;
+
+                // Sinergia (penalizar builds muito desequilibradas)
+                const avg = TOTAL_POINTS / 5;
+                const variance = Math.pow(this.strength - avg, 2) +
+                                Math.pow(this.dexterity - avg, 2) +
+                                Math.pow(this.intelligence - avg, 2) +
+                                Math.pow(this.vitality - avg, 2) +
+                                Math.pow(this.luck - avg, 2);
+                const synergyPenalty = variance / 100;
+
+                // Fitness final (simulação de eficiência em combate)
+                this.fitness = Math.round(
+                    (hp * 0.3) +
+                    (totalDamage * critMultiplier * 2) +
+                    (defense * 0.5) +
+                    skillBonus -
+                    synergyPenalty
+                );
+
+                return this.fitness;
+            }
+
+            static random() {
+                return new Character(
+                    Math.random() * MAX_ATTR_VALUE,
+                    Math.random() * MAX_ATTR_VALUE,
+                    Math.random() * MAX_ATTR_VALUE,
+                    Math.random() * MAX_ATTR_VALUE,
+                    Math.random() * MAX_ATTR_VALUE
+                );
+            }
+
+            clone() {
+                return new Character(
+                    this.strength,
+                    this.dexterity,
+                    this.intelligence,
+                    this.vitality,
+                    this.luck
+                );
+            }
+        }
+
+        // Inicializar população
+        function initPopulation(size) {
+            population = [];
+            for (let i = 0; i < size; i++) {
+                const char = Character.random();
+                char.calculateFitness();
+                population.push(char);
+            }
+            population.sort((a, b) => b.fitness - a.fitness);
+            return population;
+        }
+
+        // Seleção por torneio
+        function tournamentSelection(tournamentSize = 3) {
+            const tournament = [];
+            for (let i = 0; i < tournamentSize; i++) {
+                tournament.push(population[Math.floor(Math.random() * population.length)]);
+            }
+            tournament.sort((a, b) => b.fitness - a.fitness);
+            return tournament[0];
+        }
+
+        // Cruzamento (Crossover uniforme com média ponderada)
+        function crossover(parent1, parent2) {
+            const alpha = Math.random(); // Fator de mistura
+
+            const child = new Character(
+                parent1.strength * alpha + parent2.strength * (1 - alpha),
+                parent1.dexterity * alpha + parent2.dexterity * (1 - alpha),
+                parent1.intelligence * alpha + parent2.intelligence * (1 - alpha),
+                parent1.vitality * alpha + parent2.vitality * (1 - alpha),
+                parent1.luck * alpha + parent2.luck * (1 - alpha)
+            );
+
+            return child;
+        }
+
+        // Mutação
+        function mutate(character, mutationRate) {
+            if (Math.random() * 100 < mutationRate) {
+                const attrs = ['strength', 'dexterity', 'intelligence', 'vitality', 'luck'];
+
+                // Escolher dois atributos aleatórios
+                const attr1 = attrs[Math.floor(Math.random() * attrs.length)];
+                let attr2 = attrs[Math.floor(Math.random() * attrs.length)];
+                while (attr2 === attr1) {
+                    attr2 = attrs[Math.floor(Math.random() * attrs.length)];
+                }
+
+                // Transferir pontos de um para outro
+                const transfer = Math.floor(Math.random() * 10) + 1;
+                if (character[attr1] >= transfer) {
+                    character[attr1] -= transfer;
+                    character[attr2] = Math.min(MAX_ATTR_VALUE, character[attr2] + transfer);
+                }
+
+                character.adjustTotal();
+                character.skills = character.determineSkills();
+            }
+        }
+
+        // Calcular diversidade
+        function calculateDiversity() {
+            if (population.length === 0) return 0;
+
+            let totalVariance = 0;
+            const attrs = ['strength', 'dexterity', 'intelligence', 'vitality', 'luck'];
+
+            attrs.forEach(attr => {
+                const values = population.map(char => char[attr]);
+                const avg = values.reduce((a, b) => a + b, 0) / values.length;
+                const variance = values.reduce((sum, val) => sum + Math.pow(val - avg, 2), 0) / values.length;
+                totalVariance += variance;
+            });
+
+            return Math.round((totalVariance / attrs.length) * 10) / 10;
+        }
+
+        // Próxima geração
+        function nextGeneration() {
+            const popSize = population.length;
+            const eliteSize = Math.floor(popSize * (parseInt(document.getElementById('eliteRate').value) / 100));
+            const mutationRate = parseInt(document.getElementById('mutationRate').value);
+
+            // Ordenar por fitness
+            population.sort((a, b) => b.fitness - a.fitness);
+
+            // Elitismo - manter os melhores
+            const newPopulation = population.slice(0, eliteSize).map(char => char.clone());
+
+            // Gerar nova população
+            while (newPopulation.length < popSize) {
+                const parent1 = tournamentSelection();
+                const parent2 = tournamentSelection();
+                const child = crossover(parent1, parent2);
+                mutate(child, mutationRate);
+                child.calculateFitness();
+                newPopulation.push(child);
+            }
+
+            population = newPopulation;
+            population.sort((a, b) => b.fitness - a.fitness);
+
+            // Atualizar melhor de todos os tempos
+            if (!bestEver || population[0].fitness > bestEver.fitness) {
+                bestEver = population[0].clone();
+                addLog(`Nova melhor build encontrada! Fitness: ${bestEver.fitness}`, 'log-improvement');
+            }
+        }
+
+        // Visualização
+        function updateDisplay() {
+            // Stats
+            document.getElementById('generation').textContent = generation;
+            document.getElementById('bestFitness').textContent = population[0].fitness;
+
+            const avgFitness = Math.round(population.reduce((sum, char) => sum + char.fitness, 0) / population.length);
+            document.getElementById('avgFitness').textContent = avgFitness;
+
+            const diversity = calculateDiversity();
+            document.getElementById('diversity').textContent = diversity + '%';
+
+            // Histórico
+            fitnessHistory.push({ generation, best: population[0].fitness, avg: avgFitness });
+            diversityHistory.push({ generation, value: diversity });
+
+            // Melhor personagem
+            displayBestCharacter(population[0]);
+
+            // População
+            displayPopulation();
+
+            // Gráficos
+            updateCharts();
+        }
+
+        function displayBestCharacter(char) {
+            const hp = 100 + (char.vitality * 10);
+            const physicalDmg = Math.round(char.strength * 2 + char.dexterity * 1.5);
+            const magicalDmg = Math.round(char.intelligence * 2.5);
+            const defense = Math.round(char.vitality * 1.5 + char.strength * 0.5);
+            const critRate = Math.round(((char.luck + char.dexterity) / 200) * 100);
+
+            const html = `
+                <div class="best-character">
+                    <h3>⭐ Fitness: ${char.fitness} | HP: ${hp} | DEF: ${defense} | CRIT: ${critRate}%</h3>
+                    <div class="attributes">
+                        <div class="attribute">
+                            <div class="attribute-name">💪 Força</div>
+                            <div class="attribute-value">${char.strength}</div>
+                        </div>
+                        <div class="attribute">
+                            <div class="attribute-name">🏃 Destreza</div>
+                            <div class="attribute-value">${char.dexterity}</div>
+                        </div>
+                        <div class="attribute">
+                            <div class="attribute-name">🧠 Inteligência</div>
+                            <div class="attribute-value">${char.intelligence}</div>
+                        </div>
+                        <div class="attribute">
+                            <div class="attribute-name">❤️ Vitalidade</div>
+                            <div class="attribute-value">${char.vitality}</div>
+                        </div>
+                        <div class="attribute">
+                            <div class="attribute-name">🍀 Sorte</div>
+                            <div class="attribute-value">${char.luck}</div>
+                        </div>
+                    </div>
+                    <div style="margin-top: 15px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                        <div style="background: rgba(255,255,255,0.2); padding: 10px; border-radius: 5px;">
+                            <strong>⚔️ Dano Físico:</strong> ${physicalDmg}
+                        </div>
+                        <div style="background: rgba(255,255,255,0.2); padding: 10px; border-radius: 5px;">
+                            <strong>✨ Dano Mágico:</strong> ${magicalDmg}
+                        </div>
+                    </div>
+                    <div class="skills" style="margin-top: 15px;">
+                        <h4>🎯 Habilidades Desbloqueadas (${char.skills.length}):</h4>
+                        <div class="skill-list">
+                            ${char.skills.map(skill => `<span class="skill-tag">${skill.name}</span>`).join('')}
+                            ${char.skills.length === 0 ? '<span class="skill-tag">Nenhuma habilidade desbloqueada</span>' : ''}
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.getElementById('bestCharacterDisplay').innerHTML = html;
+        }
+
+        function displayPopulation() {
+            const maxFitness = population[0].fitness;
+            const eliteSize = Math.floor(population.length * (parseInt(document.getElementById('eliteRate').value) / 100));
+
+            const html = population.slice(0, 20).map((char, index) => {
+                const isElite = index < eliteSize;
+                const fitnessPercent = (char.fitness / maxFitness) * 100;
+
+                return `
+                    <div class="individual ${isElite ? 'elite' : ''}">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                            <strong>#${index + 1}</strong>
+                            <span>${isElite ? '⭐' : ''} ${char.fitness}</span>
+                        </div>
+                        <div class="fitness-bar">
+                            <div class="fitness-fill" style="width: ${fitnessPercent}%"></div>
+                        </div>
+                        <div class="mini-attributes">
+                            <div class="mini-attr">
+                                <div>💪</div>
+                                <strong>${char.strength}</strong>
+                            </div>
+                            <div class="mini-attr">
+                                <div>🏃</div>
+                                <strong>${char.dexterity}</strong>
+                            </div>
+                            <div class="mini-attr">
+                                <div>🧠</div>
+                                <strong>${char.intelligence}</strong>
+                            </div>
+                            <div class="mini-attr">
+                                <div>❤️</div>
+                                <strong>${char.vitality}</strong>
+                            </div>
+                            <div class="mini-attr">
+                                <div>🍀</div>
+                                <strong>${char.luck}</strong>
+                            </div>
+                        </div>
+                        <div style="margin-top: 8px; font-size: 0.8em; text-align: center;">
+                            🎯 ${char.skills.length} habilidades
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            document.getElementById('populationDisplay').innerHTML = html;
+        }
+
+        function updateCharts() {
+            // Gráfico de Fitness
+            fitnessCtx.clearRect(0, 0, 400, 250);
+
+            if (fitnessHistory.length > 1) {
+                const maxGen = fitnessHistory[fitnessHistory.length - 1].generation;
+                const maxFit = Math.max(...fitnessHistory.map(h => h.best));
+
+                // Fitness máximo
+                fitnessCtx.strokeStyle = '#667eea';
+                fitnessCtx.lineWidth = 3;
+                fitnessCtx.beginPath();
+                fitnessHistory.forEach((h, i) => {
+                    const x = (h.generation / maxGen) * 380 + 10;
+                    const y = 240 - ((h.best / maxFit) * 220);
+                    if (i === 0) fitnessCtx.moveTo(x, y);
+                    else fitnessCtx.lineTo(x, y);
+                });
+                fitnessCtx.stroke();
+
+                // Fitness médio
+                fitnessCtx.strokeStyle = '#f5576c';
+                fitnessCtx.lineWidth = 2;
+                fitnessCtx.beginPath();
+                fitnessHistory.forEach((h, i) => {
+                    const x = (h.generation / maxGen) * 380 + 10;
+                    const y = 240 - ((h.avg / maxFit) * 220);
+                    if (i === 0) fitnessCtx.moveTo(x, y);
+                    else fitnessCtx.lineTo(x, y);
+                });
+                fitnessCtx.stroke();
+
+                // Legenda
+                fitnessCtx.font = '12px Arial';
+                fitnessCtx.fillStyle = '#667eea';
+                fitnessCtx.fillText('Melhor', 10, 20);
+                fitnessCtx.fillStyle = '#f5576c';
+                fitnessCtx.fillText('Média', 80, 20);
+            }
+
+            // Gráfico de Diversidade
+            diversityCtx.clearRect(0, 0, 400, 250);
+
+            if (diversityHistory.length > 1) {
+                const maxGen = diversityHistory[diversityHistory.length - 1].generation;
+                const maxDiv = Math.max(...diversityHistory.map(h => h.value));
+
+                diversityCtx.strokeStyle = '#2ecc71';
+                diversityCtx.lineWidth = 3;
+                diversityCtx.beginPath();
+                diversityHistory.forEach((h, i) => {
+                    const x = (h.generation / maxGen) * 380 + 10;
+                    const y = 240 - ((h.value / (maxDiv || 1)) * 220);
+                    if (i === 0) diversityCtx.moveTo(x, y);
+                    else diversityCtx.lineTo(x, y);
+                });
+                diversityCtx.stroke();
+            }
+        }
+
+        function addLog(message, className = '') {
+            const logDiv = document.getElementById('logDisplay');
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${className}`;
+            entry.textContent = `[Gen ${generation}] ${message}`;
+            logDiv.insertBefore(entry, logDiv.firstChild);
+
+            // Limitar a 100 entradas
+            while (logDiv.children.length > 100) {
+                logDiv.removeChild(logDiv.lastChild);
+            }
+        }
+
+        // Controles
+        async function startEvolution() {
+            if (isRunning) return;
+
+            isRunning = true;
+            document.body.classList.add('running');
+
+            if (generation === 0) {
+                const popSize = parseInt(document.getElementById('popSize').value);
+                initPopulation(popSize);
+                addLog('População inicial criada', 'log-generation');
+                updateDisplay();
+            }
+
+            const delay = parseInt(document.getElementById('delay').value);
+
+            while (isRunning) {
+                generation++;
+                nextGeneration();
+                updateDisplay();
+                addLog(`Geração ${generation} - Melhor: ${population[0].fitness}, Média: ${Math.round(population.reduce((s, c) => s + c.fitness, 0) / population.length)}`);
+
+                if (delay > 0) {
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                }
+            }
+        }
+
+        function resetEvolution() {
+            isRunning = false;
+            document.body.classList.remove('running');
+            generation = 0;
+            population = [];
+            fitnessHistory = [];
+            diversityHistory = [];
+            bestEver = null;
+
+            document.getElementById('generation').textContent = '0';
+            document.getElementById('bestFitness').textContent = '0';
+            document.getElementById('avgFitness').textContent = '0';
+            document.getElementById('diversity').textContent = '0%';
+            document.getElementById('bestCharacterDisplay').innerHTML = '<p style="text-align: center; color: #666;">Clique em "Iniciar Evolução" para começar</p>';
+            document.getElementById('populationDisplay').innerHTML = '';
+            document.getElementById('logDisplay').innerHTML = '';
+
+            fitnessCtx.clearRect(0, 0, 400, 250);
+            diversityCtx.clearRect(0, 0, 400, 250);
+        }
+
+        // Parar evolução ao clicar novamente
+        document.querySelector('.btn-start').addEventListener('click', function() {
+            if (isRunning) {
+                isRunning = false;
+                document.body.classList.remove('running');
+                addLog('Evolução pausada', 'log-generation');
+            }
+        });
+    </script>
+</body>
+</html>
