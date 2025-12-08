@@ -409,6 +409,73 @@
             border-radius: 3px;
         }
 
+        .history-timeline {
+            max-height: 400px;
+            overflow-y: auto;
+            padding: 10px;
+        }
+
+        .history-entry {
+            background: white;
+            border-left: 4px solid #667eea;
+            padding: 12px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            transition: all 0.3s;
+        }
+
+        .history-entry:hover {
+            transform: translateX(5px);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .history-entry.improved {
+            border-left-color: #28a745;
+            background: #f0fff4;
+        }
+
+        .history-entry.stagnant {
+            border-left-color: #ff9800;
+            background: #fff8e1;
+        }
+
+        .history-entry h4 {
+            margin-bottom: 8px;
+            color: #667eea;
+            font-size: 1em;
+        }
+
+        .history-entry.improved h4 {
+            color: #28a745;
+        }
+
+        .history-entry.stagnant h4 {
+            color: #ff9800;
+        }
+
+        .history-stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            margin-top: 8px;
+            font-size: 0.9em;
+        }
+
+        .history-stat {
+            background: rgba(0,0,0,0.05);
+            padding: 6px;
+            border-radius: 4px;
+        }
+
+        .history-best-char {
+            font-family: 'Courier New', monospace;
+            background: rgba(0,0,0,0.05);
+            padding: 8px;
+            border-radius: 4px;
+            margin-top: 8px;
+            font-size: 0.85em;
+        }
+
         @media (max-width: 1200px) {
             .main-grid {
                 grid-template-columns: 1fr;
@@ -523,6 +590,16 @@
                         </p>
                     </div>
                 </div>
+
+                <!-- Histórico de Evolução -->
+                <div class="panel">
+                    <h2>📜 Histórico de Evolução</h2>
+                    <div id="evolutionHistory">
+                        <p style="text-align: center; color: #666; padding: 20px;">
+                            O histórico aparecerá após a primeira geração
+                        </p>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -552,6 +629,7 @@
         let processDetails = {};
         let lastBestFitness = 0;
         let generationsWithoutImprovement = 0;
+        let evolutionHistory = [];
 
         class Character {
             constructor(strength, dexterity, intelligence, vitality, luck) {
@@ -894,12 +972,24 @@
             const improvement = ((newBest - oldBest) / oldBest * 100).toFixed(1);
 
             // Verificar se houve melhoria
-            if (newBest > lastBestFitness) {
+            const hasImproved = newBest > lastBestFitness;
+            if (hasImproved) {
                 lastBestFitness = newBest;
                 generationsWithoutImprovement = 0;
             } else {
                 generationsWithoutImprovement++;
             }
+
+            // Adicionar ao histórico
+            evolutionHistory.push({
+                generation: generation,
+                bestFitness: newBest,
+                avgFitness: Math.round(population.reduce((sum, char) => sum + char.fitness, 0) / population.length),
+                improvement: improvement,
+                improved: hasImproved,
+                bestChar: population[0].clone()
+            });
+            updateEvolutionHistory();
 
             // Parar se não houver melhoria por 5 gerações consecutivas
             if (generationsWithoutImprovement >= 5 && isRunning) {
@@ -1016,6 +1106,7 @@
             processDetails = {};
             lastBestFitness = 0;
             generationsWithoutImprovement = 0;
+            evolutionHistory = [];
 
             document.getElementById('generation').textContent = '0';
             document.getElementById('bestFitness').textContent = '-';
@@ -1024,11 +1115,50 @@
             document.getElementById('populationDisplay').innerHTML =
                 '<p style="text-align: center; color: #666; padding: 20px; grid-column: 1/-1;">Execute a primeira etapa</p>';
             document.getElementById('processVisualization').innerHTML = '';
+            document.getElementById('evolutionHistory').innerHTML =
+                '<p style="text-align: center; color: #666; padding: 20px;">O histórico aparecerá após a primeira geração</p>';
             document.getElementById('btnAuto').style.display = 'block';
             document.getElementById('btnStop').style.display = 'none';
 
             updateStatus('Sistema Reiniciado', 'Clique em "População Inicial" para começar.');
             updateStepUI();
+        }
+
+        function updateEvolutionHistory() {
+            if (evolutionHistory.length === 0) return;
+
+            const html = '<div class="history-timeline">' +
+                evolutionHistory.slice().reverse().map(entry => {
+                    const statusClass = entry.improved ? 'improved' : (entry.improvement > 0 ? '' : 'stagnant');
+                    const statusIcon = entry.improved ? '🆙' : (entry.improvement > 0 ? '➡️' : '⏸️');
+                    const statusText = entry.improved ? 'Melhor solução!' : (entry.improvement > 0 ? 'Melhoria local' : 'Estagnado');
+
+                    return `
+                        <div class="history-entry ${statusClass}">
+                            <h4>${statusIcon} Geração ${entry.generation} - ${statusText}</h4>
+                            <div class="history-stats">
+                                <div class="history-stat">
+                                    <strong>Melhor Fitness:</strong> ${entry.bestFitness}
+                                </div>
+                                <div class="history-stat">
+                                    <strong>Fitness Médio:</strong> ${entry.avgFitness}
+                                </div>
+                                <div class="history-stat">
+                                    <strong>Melhoria:</strong> ${entry.improvement > 0 ? '+' : ''}${entry.improvement}%
+                                </div>
+                                <div class="history-stat">
+                                    <strong>Habilidades:</strong> ${entry.bestChar.skills.length}
+                                </div>
+                            </div>
+                            <div class="history-best-char">
+                                ${entry.bestChar.toString()}
+                            </div>
+                        </div>
+                    `;
+                }).join('') +
+                '</div>';
+
+            document.getElementById('evolutionHistory').innerHTML = html;
         }
 
         function updateStepUI() {
