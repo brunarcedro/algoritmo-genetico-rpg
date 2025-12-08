@@ -670,6 +670,11 @@
 
             const after = population.slice(0, 3).map(c => ({ char: c.toString(), fitness: c.fitness }));
 
+            // Inicializar lastBestFitness na primeira avaliação
+            if (generation === 1 && lastBestFitness === 0) {
+                lastBestFitness = population[0].fitness;
+            }
+
             processDetails = {
                 title: '📊 Etapa 2: Avaliação de Fitness',
                 steps: [
