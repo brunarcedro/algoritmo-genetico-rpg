@@ -472,7 +472,8 @@
                     </div>
 
                     <button class="btn-primary" onclick="nextStep()">▶️ Próximo Passo</button>
-                    <button class="btn-success" onclick="runAutomatically()">⚡ Automático</button>
+                    <button class="btn-success" id="btnAuto" onclick="runAutomatically()">⚡ Automático</button>
+                    <button class="btn-danger" id="btnStop" onclick="stopAutomatically()" style="display: none;">⏸️ Parar</button>
                     <button class="btn-danger" onclick="reset()">🔄 Reiniciar</button>
                 </div>
 
@@ -947,6 +948,9 @@
             if (isRunning) return;
             isRunning = true;
 
+            document.getElementById('btnAuto').style.display = 'none';
+            document.getElementById('btnStop').style.display = 'block';
+
             if (currentStep === -1) {
                 executeStep(0);
                 await sleep(800);
@@ -961,7 +965,16 @@
                 }
                 if (!isRunning) break;
             }
+
             isRunning = false;
+            document.getElementById('btnAuto').style.display = 'block';
+            document.getElementById('btnStop').style.display = 'none';
+        }
+
+        function stopAutomatically() {
+            isRunning = false;
+            document.getElementById('btnAuto').style.display = 'block';
+            document.getElementById('btnStop').style.display = 'none';
         }
 
         function sleep(ms) {
